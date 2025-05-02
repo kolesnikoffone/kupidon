@@ -37,20 +37,12 @@ async def start(message: types.Message, state: FSMContext):
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
     await callback.message.answer(
-        "💍 <b>Свадьба Игоря и Анастасии</b>
-
-"
-        "📅 <b>Дата:</b> 23 июля 2025
-"
-        "🕛 <b>Время:</b> 12:00 — регистрация
-"
-        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>
-"
-        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>
-"
-        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)
-
-"
+        "💍 <b>Свадьба Игоря и Анастасии</b>\n\n"
+        "📅 <b>Дата:</b> 23 июля 2025\n"
+        "🕛 <b>Время:</b> 12:00 — регистрация\n"
+        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>\n"
+        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>\n"
+        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)\n\n"
         "💌 А теперь немного вопросов..."
     )
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
