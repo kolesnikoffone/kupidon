@@ -31,7 +31,46 @@ class Form(StatesGroup):
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
     start_button = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]])
-    await message.answer("Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?", reply_markup=start_button)
+
+    with open("wedding_photo.png", "rb") as photo:
+        await bot.send_photo(
+            chat_id=message.chat.id,
+            photo=photo,
+            caption="💍 <b>Свадьба Игоря и Анастасии</b>"
+                    "📅 <b>Дата:</b> 23 июля 2025"
+                    "🕛 <b>Время:</b> 12:00 — регистрация"
+                    "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>"
+                    "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>"
+                    "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)",
+            parse_mode=ParseMode.HTML
+        )
+
+    await message.answer(
+        "Привет! Я Купидончик 💘
+Готов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
+        reply_markup=start_button
+    )
+    await message.answer(
+        "Привет! Я Купидончик 💘
+Готов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?"
+    )
+
+    await message.answer(
+        "💍 <b>Свадьба Игоря и Анастасии</b>
+
+"
+        "📅 <b>Дата:</b> 23 июля 2025
+"
+        "🕛 <b>Время:</b> 12:00 — регистрация
+"
+        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>
+"
+        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>
+"
+        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)"
+    )
+
+    await message.answer("Нажми, чтобы начать ❤️", reply_markup=start_button)    await message.answer("Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?", reply_markup=start_button)
 
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
