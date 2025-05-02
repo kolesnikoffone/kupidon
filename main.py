@@ -129,7 +129,7 @@ async def ask_alcohol(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
         [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
         [InlineKeyboardButton(text="🧃 Другое", callback_data="alc:Другое")],
-        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_comment")],
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_alcohol")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
     await message.answer("🍷 Предпочтения по алкоголю (можно выбрать несколько):", reply_markup=keyboard)
@@ -179,10 +179,11 @@ async def go_back(callback: types.CallbackQuery, state: FSMContext):
         await ask_alcohol(callback.message, state)
     await callback.answer()
 
-@dp.callback_query(lambda c: c.data == "skip_comment")
-async def skip_comment(callback: types.CallbackQuery, state: FSMContext):
+@dp.callback_query(lambda c: c.data == "skip_alcohol")
+async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(alcohol=["(не выбрано)"])
     await ask_comment(callback.message, state)
+    await callback.answer()
     await callback.answer()
 
 @dp.message(Form.comment)
