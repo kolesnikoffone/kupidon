@@ -91,12 +91,21 @@ async def get_food(callback: types.CallbackQuery, state: FSMContext):
 async def get_alcohol(message: types.Message, state: FSMContext):
     choices = [c.strip() for c in message.text.split(",") if c.strip()]
     await state.update_data(alcohol=choices)
-    await message.answer("Если у вас есть комментарии, напишите их сейчас. Или отправьте '-' чтобы пропустить")
+    skip_button = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_comment")]
+    ])
+    await message.answer("Если у вас есть комментарии, напишите их сейчас или нажмите кнопку ниже.", reply_markup=skip_button)
     await state.set_state(Form.comment)
+
+@dp.callback_query(lambda c: c.data == "skip_comment")
+async def skip_comment(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(comment="(без комментариев)")
+    await finish(callback.message, state)
+    await callback.answer()
 
 @dp.message(Form.comment)
 async def finish(message: types.Message, state: FSMContext):
-    data = await state.update_data(comment=message.text.strip() if message.text.strip() != "-" else "(без комментариев)")
+    data = await state.update_data(comment=message.text.strip())
     data = await state.get_data()
 
     summary = f"<b>📨 Новое подтверждение:</b>\n"
