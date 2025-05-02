@@ -130,12 +130,9 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer("✍️ Пожалуйста, напишите, что именно вы предпочитаете из напитков")
         await state.set_state(Form.alcohol_other)
     else:
-        data = await state.get_data()
-        selected = data.get("alcohol", [])
-        if choice not in selected:
-            selected.append(choice)
-        await state.update_data(alcohol=selected)
-        await callback.answer(f"✅ Добавлено: {choice}")
+        await state.update_data(alcohol=[choice])
+        await ask_comment(callback.message, state)
+    await callback.answer()
 
 @dp.message(Form.alcohol_other)
 async def handle_other_alcohol(message: types.Message, state: FSMContext):
@@ -171,8 +168,8 @@ async def go_back(callback: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data == "skip_comment")
 async def skip_comment(callback: types.CallbackQuery, state: FSMContext):
-    await state.update_data(comment="(без комментариев)")
-    await finish(callback.message, state)
+    await state.update_data(alcohol=["(не выбрано)"])
+    await ask_comment(callback.message, state)
     await callback.answer()
 
 @dp.message(Form.comment)
