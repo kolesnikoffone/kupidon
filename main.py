@@ -2,17 +2,20 @@ import logging
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.state import StatesGroup, State
+from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # должен быть строкой
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # строка с chat_id вида -100...
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
+
 logging.basicConfig(level=logging.INFO)
 
 class Form(StatesGroup):
@@ -24,26 +27,24 @@ class Form(StatesGroup):
     alcohol = State()
     comment = State()
 
-user_data = {}
-
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
+    await state.clear()
     await message.answer("Привет! Давай заполним приглашение на свадьбу 💍\nКак тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
 
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    markup.add(KeyboardButton("Да"), KeyboardButton("Нет"))
-    await message.answer("Будут ли с вами дополнительные гости?", reply_markup=markup)
+    keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Да")],[KeyboardButton(text="Нет")]], resize_keyboard=True, one_time_keyboard=True)
+    await message.answer("Будут ли с вами дополнительные гости?", reply_markup=keyboard)
     await state.set_state(Form.has_guests)
 
 @dp.message(Form.has_guests)
-async def has_guests(message: types.Message, state: FSMContext):
-    if message.text.lower() == "да":
+async def ask_guest_count(message: types.Message, state: FSMContext):
+    if message.text.strip().lower() == "да":
+        await message.answer("Сколько человек будет с вами?", reply_markup=types.ReplyKeyboardRemove())
         await state.set_state(Form.guest_count)
-        await message.answer("Сколько человек будет с вами?")
     else:
         await state.update_data(guest_names=[])
         await ask_main_course(message, state)
@@ -51,70 +52,62 @@ async def has_guests(message: types.Message, state: FSMContext):
 @dp.message(Form.guest_count)
 async def get_guest_count(message: types.Message, state: FSMContext):
     try:
-        count = int(message.text)
+        count = int(message.text.strip())
         await state.update_data(guest_count=count, guest_names=[])
-        await message.answer("Пожалуйста, введите имя каждого гостя по одному сообщению")
+        await message.answer("Введите имя каждого гостя по одному сообщению")
         await state.set_state(Form.guest_names)
     except ValueError:
-        await message.answer("Введите число, пожалуйста")
+        await message.answer("Пожалуйста, введите число гостей цифрой")
 
 @dp.message(Form.guest_names)
 async def get_guest_names(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    guest_names = data.get("guest_names", [])
-    guest_names.append(message.text)
-    if len(guest_names) < data["guest_count"]:
-        await state.update_data(guest_names=guest_names)
+    guests = data.get("guest_names", [])
+    guests.append(message.text.strip())
+    if len(guests) < data.get("guest_count", 0):
+        await state.update_data(guest_names=guests)
         await message.answer("Введите следующее имя")
     else:
-        await state.update_data(guest_names=guest_names)
+        await state.update_data(guest_names=guests)
         await ask_main_course(message, state)
 
 async def ask_main_course(message: types.Message, state: FSMContext):
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Рыба", callback_data="food:Рыба")],
-        [InlineKeyboardButton(text="Мясо", callback_data="food:Мясо")],
-        [InlineKeyboardButton(text="Курица", callback_data="food:Курица")],
-        [InlineKeyboardButton(text="Овощи и грибы", callback_data="food:Овощи и грибы")],
-    ])
-    await message.answer("Что вы предпочитаете в качестве основного блюда?", reply_markup=markup)
+    builder = InlineKeyboardBuilder()
+    for food in ["Рыба", "Мясо", "Курица", "Овощи и грибы"]:
+        builder.button(text=food, callback_data=f"food:{food}")
+    await message.answer("Что вы предпочитаете в качестве основного блюда?", reply_markup=builder.as_markup())
     await state.set_state(Form.main_course)
 
 @dp.callback_query(lambda c: c.data.startswith("food:"))
-async def food_chosen(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data.split(":")[1]
-    await state.update_data(main_course=choice)
-    await callback.message.answer("Выберите предпочтения по алкоголю (можно несколько, отправьте одним сообщением):\nИгристое, Белое вино, Красное вино, Коньяк, Водка, Другое")
+async def get_food(callback: types.CallbackQuery, state: FSMContext):
+    food_choice = callback.data.split(":")[1]
+    await state.update_data(main_course=food_choice)
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("Предпочтения по алкоголю (можно несколько, отправьте одним сообщением):\nИгристое, Белое вино, Красное вино, Коньяк, Водка, Другое")
     await state.set_state(Form.alcohol)
     await callback.answer()
 
 @dp.message(Form.alcohol)
 async def get_alcohol(message: types.Message, state: FSMContext):
-    alcohol_choices = [s.strip() for s in message.text.split(",")]
-    await state.update_data(alcohol=alcohol_choices)
+    choices = [c.strip() for c in message.text.split(",") if c.strip()]
+    await state.update_data(alcohol=choices)
     await message.answer("Если у вас есть комментарии, напишите их сейчас. Или отправьте '-' чтобы пропустить")
     await state.set_state(Form.comment)
 
 @dp.message(Form.comment)
-async def get_comment(message: types.Message, state: FSMContext):
-    comment = message.text if message.text.strip() != "-" else "(без комментариев)"
-    await state.update_data(comment=comment)
+async def finish(message: types.Message, state: FSMContext):
+    data = await state.update_data(comment=message.text.strip() if message.text.strip() != "-" else "(без комментариев)")
     data = await state.get_data()
 
-    guest_block = "\n".join(data.get("guest_names", [])) if data.get("guest_names") else "нет"
-    alcohol_str = ", ".join(data.get("alcohol", []))
+    summary = f"<b>📨 Новое подтверждение:</b>\n"
+    summary += f"👤 <b>Имя:</b> {data['name']}\n"
+    summary += f"👥 <b>Доп. гости:</b> {', '.join(data.get('guest_names', ['нет']))}\n"
+    summary += f"🍽 <b>Блюдо:</b> {data['main_course']}\n"
+    summary += f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
+    summary += f"💬 <b>Комментарий:</b> {data['comment']}"
 
-    summary = (
-        f"📨 Новое подтверждение:\n"
-        f"👤 Имя: {data['name']}\n"
-        f"👥 Доп. гости: {guest_block}\n"
-        f"🍽 Блюдо: {data['main_course']}\n"
-        f"🍷 Алкоголь: {alcohol_str}\n"
-        f"💬 Комментарий: {data['comment']}"
-    )
-
-    await bot.send_message(chat_id=ADMIN_CHAT_ID, text=summary)
-    await message.answer("Спасибо за ответы! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
+    await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+    await message.answer("Спасибо! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
 async def main():
