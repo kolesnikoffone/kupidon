@@ -53,6 +53,7 @@ async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
 "
         "💌 А теперь немного вопросов..."
     )
+    )
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
     await callback.answer()
