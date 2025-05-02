@@ -35,24 +35,18 @@ async def start(message: types.Message, state: FSMContext):
     ])
 
     await bot.send_photo(
-        chat_id=message.chat.id,
-        photo="https://i.postimg.cc/MTf0j1W2/IMG-6156-EDIT.jpg",
-        caption=(
-            "💍 <b>Свадьба Игоря и Анастасии</b>
-
-"
-            "📅 <b>Дата:</b> 23 июля 2025
-"
-            "🕛 <b>Время:</b> 12:00 — регистрация
-"
-            "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>
-"
-            "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>
-"
-            "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)"
-        ),
-        parse_mode=ParseMode.HTML
-    )
+    chat_id=message.chat.id,
+    photo="https://i.postimg.cc/MTf0j1W2/IMG-6156-EDIT.jpg",
+    caption=(
+        "💍 <b>Свадьба Игоря и Анастасии</b>\n\n"
+        "📅 <b>Дата:</b> 23 июля 2025\n"
+        "🕛 <b>Время:</b> 12:00 — регистрация\n"
+        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>\n"
+        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>\n"
+        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)"
+    ),
+    parse_mode=ParseMode.HTML
+)
 
     await message.answer(
         "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
@@ -62,16 +56,9 @@ async def start(message: types.Message, state: FSMContext):
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
-    await callback.message.answer(
-        "💍 <b>Свадьба Игоря и Анастасии</b>\n\n"
-        "📅 <b>Дата:</b> 23 июля 2025\n"
-        "🕛 <b>Время:</b> 12:00 — регистрация\n"
-        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>\n"
-        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>\n"
-        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)\n\n"
-        "💌 А теперь немного вопросов..."
-    )
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
+    
+    
     await state.set_state(Form.name)
     await callback.answer()
 
