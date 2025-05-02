@@ -24,18 +24,19 @@ class Form(StatesGroup):
     guest_names = State()
     main_course = State()
     alcohol = State()
+    alcohol_other = State()
     comment = State()
 
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
-    start_button = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Начать", callback_data="start_form")]])
+    start_button = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]])
     await message.answer("Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?", reply_markup=start_button)
 
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
-    await callback.message.answer("Как тебя зовут? (Имя и Фамилия)")
+    await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
     await callback.answer()
 
@@ -43,21 +44,20 @@ async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Да", callback_data="guests_yes")],
-        [InlineKeyboardButton(text="Нет", callback_data="guests_no")]
+        [InlineKeyboardButton(text="👍 Да", callback_data="guests_yes")],
+        [InlineKeyboardButton(text="🙅‍♂️ Нет", callback_data="guests_no")]
     ])
-    await message.answer("Будут ли с вами дополнительные гости?", reply_markup=keyboard)
+    await message.answer("👥 Будут ли с вами дополнительные гости?", reply_markup=keyboard)
     await state.set_state(Form.has_guests)
 
 @dp.callback_query(lambda c: c.data in ["guests_yes", "guests_no"])
 async def handle_guest_choice(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "guests_yes":
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="1", callback_data="guest_count:1")],
-            [InlineKeyboardButton(text="2", callback_data="guest_count:2")],
-            [InlineKeyboardButton(text="3", callback_data="guest_count:3")]
+            [InlineKeyboardButton(text="1", callback_data="guest_count:1"), InlineKeyboardButton(text="2", callback_data="guest_count:2"), InlineKeyboardButton(text="3", callback_data="guest_count:3")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:name")]
         ])
-        await callback.message.edit_text("Сколько человек будет с вами?", reply_markup=keyboard)
+        await callback.message.edit_text("🧑‍🤝‍🧑 Сколько человек будет с вами?", reply_markup=keyboard)
         await state.set_state(Form.guest_count)
     else:
         await state.update_data(guest_names=[])
@@ -69,75 +69,81 @@ async def handle_guest_count(callback: types.CallbackQuery, state: FSMContext):
     count = int(callback.data.split(":")[1])
     await state.update_data(guest_count=count, guest_names=[])
     if count == 1:
-        await callback.message.edit_text("Введите имя гостя")
+        await callback.message.edit_text("✍️ Введите имя гостя")
     else:
-        await callback.message.edit_text("Введите имена гостей через запятую")
+        await callback.message.edit_text("✍️ Введите имена гостей через запятую")
     await state.set_state(Form.guest_names)
     await callback.answer()
 
 @dp.message(Form.guest_names)
 async def get_guest_names(message: types.Message, state: FSMContext):
-    data = await state.get_data()
     names = [name.strip() for name in message.text.split(",") if name.strip()]
     await state.update_data(guest_names=names)
     await ask_main_course(message, state)
 
 async def ask_main_course(message: types.Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Рыба", callback_data="food:Рыба")],
-        [InlineKeyboardButton(text="Мясо", callback_data="food:Мясо")],
-        [InlineKeyboardButton(text="Курица", callback_data="food:Курица")],
-        [InlineKeyboardButton(text="Овощи и грибы", callback_data="food:Овощи и грибы")]
+        [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
+        [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
+        [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
+        [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:guests")]
     ])
-    await message.answer("Что вы предпочитаете в качестве основного блюда? (можно выбрать несколько)", reply_markup=keyboard)
-    await state.update_data(main_course=[])
+    await message.answer("🍽 Что вы предпочитаете в качестве основного блюда?", reply_markup=keyboard)
     await state.set_state(Form.main_course)
 
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_food(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
-    data = await state.get_data()
-    selected = data.get("main_course", [])
-    if choice not in selected:
-        selected.append(choice)
-    await state.update_data(main_course=selected)
-    await callback.answer(text=f"Добавлено: {choice}")
-    await callback.message.answer("Можете выбрать ещё блюдо или нажмите 'Далее'", reply_markup=InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="Далее", callback_data="done_food")]]))
+    await state.update_data(main_course=[choice])
+    await ask_alcohol(callback.message, state)
+    await callback.answer()
 
-@dp.callback_query(lambda c: c.data == "done_food")
-async def ask_alcohol(callback: types.CallbackQuery, state: FSMContext):
+async def ask_alcohol(message: types.Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Игристое", callback_data="alc:Игристое")],
-        [InlineKeyboardButton(text="Белое вино", callback_data="alc:Белое вино")],
-        [InlineKeyboardButton(text="Красное вино", callback_data="alc:Красное вино")],
-        [InlineKeyboardButton(text="Коньяк", callback_data="alc:Коньяк")],
-        [InlineKeyboardButton(text="Водка", callback_data="alc:Водка")],
-        [InlineKeyboardButton(text="Другое", callback_data="alc:Другое")]
+        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
+        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
+        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
+        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
+        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
+        [InlineKeyboardButton(text="🧃 Другое", callback_data="alc:Другое")],
+        [InlineKeyboardButton(text="✅ Далее", callback_data="done_alcohol")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
-    await callback.message.edit_text("Предпочтения по алкоголю (можно выбрать несколько)", reply_markup=keyboard)
+    await message.answer("🍷 Предпочтения по алкоголю (можно выбрать несколько):", reply_markup=keyboard)
     await state.update_data(alcohol=[])
     await state.set_state(Form.alcohol)
-    await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
+    if choice == "Другое":
+        await callback.message.answer("✍️ Пожалуйста, напишите, что именно вы предпочитаете из напитков")
+        await state.set_state(Form.alcohol_other)
+    else:
+        data = await state.get_data()
+        selected = data.get("alcohol", [])
+        if choice not in selected:
+            selected.append(choice)
+        await state.update_data(alcohol=selected)
+        await callback.answer(f"✅ Добавлено: {choice}")
+
+@dp.message(Form.alcohol_other)
+async def handle_other_alcohol(message: types.Message, state: FSMContext):
+    other = message.text.strip()
     data = await state.get_data()
-    selected = data.get("alcohol", [])
-    if choice not in selected:
-        selected.append(choice)
-    await state.update_data(alcohol=selected)
-    await callback.message.answer("Можете выбрать ещё напиток или нажмите 'Далее'", reply_markup=InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="Далее", callback_data="done_alcohol")]]))
-    await callback.answer(text=f"Добавлено: {choice}")
+    alcohol = data.get("alcohol", [])
+    alcohol.append(other)
+    await state.update_data(alcohol=alcohol)
+    await ask_comment(message, state)
 
 @dp.callback_query(lambda c: c.data == "done_alcohol")
 async def ask_comment(callback: types.CallbackQuery, state: FSMContext):
     skip_button = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Пропустить", callback_data="skip_comment")]
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_comment")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:alcohol")]
     ])
-    await callback.message.edit_text("Если у вас есть комментарии, напишите их одним сообщением или нажмите кнопку ниже.", reply_markup=skip_button)
+    await callback.message.answer("💬 Если у вас есть комментарии, напишите их одним сообщением или нажмите кнопку ниже.", reply_markup=skip_button)
     await state.set_state(Form.comment)
     await callback.answer()
 
@@ -169,7 +175,7 @@ async def finish(message: types.Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
 
-    await message.answer("Спасибо! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
+    await message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
 async def main():
