@@ -36,6 +36,23 @@ async def start(message: types.Message, state: FSMContext):
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
+    await callback.message.answer(
+        "💍 <b>Свадьба Игоря и Анастасии</b>
+
+"
+        "📅 <b>Дата:</b> 23 июля 2025
+"
+        "🕛 <b>Время:</b> 12:00 — регистрация
+"
+        "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>
+"
+        "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>
+"
+        "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)
+
+"
+        "💌 А теперь немного вопросов..."
+    )
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
     await callback.answer()
@@ -107,7 +124,7 @@ async def ask_alcohol(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
         [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
         [InlineKeyboardButton(text="🧃 Другое", callback_data="alc:Другое")],
-        [InlineKeyboardButton(text="✅ Далее", callback_data="done_alcohol")],
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_comment")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
     await message.answer("🍷 Предпочтения по алкоголю (можно выбрать несколько):", reply_markup=keyboard)
@@ -145,6 +162,19 @@ async def ask_comment(callback: types.CallbackQuery, state: FSMContext):
     ])
     await callback.message.answer("💬 Если у вас есть комментарии, напишите их одним сообщением или нажмите кнопку ниже.", reply_markup=skip_button)
     await state.set_state(Form.comment)
+    await callback.answer()
+
+@dp.callback_query(lambda c: c.data.startswith("back:"))
+async def go_back(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == "back:name":
+        await callback.message.edit_text("👤 Как тебя зовут? (Имя и Фамилия)")
+        await state.set_state(Form.name)
+    elif callback.data == "back:guests":
+        await get_name(callback.message, state)
+    elif callback.data == "back:main_course":
+        await ask_main_course(callback.message, state)
+    elif callback.data == "back:alcohol":
+        await ask_alcohol(callback.message, state)
     await callback.answer()
 
 @dp.callback_query(lambda c: c.data == "skip_comment")
