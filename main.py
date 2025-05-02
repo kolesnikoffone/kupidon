@@ -155,9 +155,7 @@ async def handle_other_alcohol(message: types.Message, state: FSMContext):
     alcohol.append(other)
     await state.update_data(alcohol=alcohol)
     await ask_comment(message, state)
-
     await state.set_state(Form.comment)
-    await callback.answer()
 
 @dp.callback_query(lambda c: c.data.startswith("back:"))
 async def go_back(callback: types.CallbackQuery, state: FSMContext):
