@@ -122,6 +122,9 @@ async def select_food(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 async def ask_alcohol(message: types.Message, state: FSMContext):
+
+async def ask_comment(message: types.Message, state: FSMContext):
+    await finish(message, state)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
         [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
@@ -177,7 +180,7 @@ async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     await callback.answer()
 
-@dp.message(Form.comment)
+@dp.message(Form.alcohol)
 async def finish(message: types.Message, state: FSMContext):
     data = await state.update_data(comment=message.text.strip())
     data = await state.get_data()
