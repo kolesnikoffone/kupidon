@@ -115,7 +115,13 @@ async def finish(message: types.Message, state: FSMContext):
     summary += f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
     summary += f"💬 <b>Комментарий:</b> {data['comment']}"
 
-    await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+        if not ADMIN_CHAT_ID:
+        await message.answer("❌ ADMIN_CHAT_ID не задан. Пожалуйста, проверь настройки на Render.")
+        return
+    try:
+        await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
     await message.answer("Спасибо! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
