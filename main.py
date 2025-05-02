@@ -108,20 +108,23 @@ async def finish(message: types.Message, state: FSMContext):
     data = await state.update_data(comment=message.text.strip())
     data = await state.get_data()
 
-    summary = f"<b>📨 Новое подтверждение:</b>\n"
-    summary += f"👤 <b>Имя:</b> {data['name']}\n"
-    summary += f"👥 <b>Доп. гости:</b> {', '.join(data.get('guest_names', ['нет']))}\n"
-    summary += f"🍽 <b>Блюдо:</b> {data['main_course']}\n"
-    summary += f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
-    summary += f"💬 <b>Комментарий:</b> {data['comment']}"
+    summary = (
+        f"<b>📨 Новое подтверждение:</b>\n"
+        f"👤 <b>Имя:</b> {data['name']}\n"
+        f"👥 <b>Доп. гости:</b> {', '.join(data.get('guest_names', ['нет']))}\n"
+        f"🍽 <b>Блюдо:</b> {data['main_course']}\n"
+        f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
+        f"💬 <b>Комментарий:</b> {data['comment']}"
+    )
 
-        if not ADMIN_CHAT_ID:
+    if not ADMIN_CHAT_ID:
         await message.answer("❌ ADMIN_CHAT_ID не задан. Пожалуйста, проверь настройки на Render.")
         return
     try:
         await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
     except Exception as e:
         await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
+
     await message.answer("Спасибо! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
