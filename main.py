@@ -128,6 +128,10 @@ async def finish(message: types.Message, state: FSMContext):
     await message.answer("Спасибо! Присоединяйся к свадебному чату 🎉\nhttps://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
+@dp.message()
+async def debug_chat_id(message: types.Message):
+    await message.answer(f"📌 chat.id = <code>{message.chat.id}</code>")
+
 async def main():
     await dp.start_polling(bot)
 
