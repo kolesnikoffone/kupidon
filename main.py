@@ -118,6 +118,7 @@ async def ask_main_course(message: types.Message, state: FSMContext):
 async def select_food(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
     await state.update_data(main_course=[choice])
+    await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await ask_alcohol(callback.message, state)
     await callback.answer()
 
@@ -135,23 +136,12 @@ async def ask_alcohol(message: types.Message, state: FSMContext):
     await message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
-    await finish(message, state)
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
-        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
-        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
-        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
-        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
-        [InlineKeyboardButton(text="🧃 Другое", callback_data="alc:Другое")],
-        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_alcohol")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
-    ])
-    await message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
+    await callback.message.answer(f"✅ Вы выбрали: {choice}")
     if choice == "Другое":
         await callback.message.answer("✍️ Пожалуйста, напишите, что именно вы предпочитаете из напитков")
         await state.set_state(Form.alcohol_other)
