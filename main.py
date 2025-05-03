@@ -121,8 +121,7 @@ async def select_food(callback: types.CallbackQuery, state: FSMContext):
     await ask_alcohol(callback.message, state)
     await callback.answer()
 
-async def ask_comment(message: types.Message, state: FSMContext):
-    await finish(message, state)
+async def ask_alcohol(message: types.Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
         [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
@@ -133,8 +132,7 @@ async def ask_comment(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_alcohol")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
-    await message.answer("🍷 Предпочтения по алкоголю (выберите один):", reply_markup=keyboard)
-    await state.update_data(alcohol=[])
+    await message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
