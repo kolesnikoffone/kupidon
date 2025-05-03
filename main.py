@@ -147,7 +147,7 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(Form.alcohol_other)
     else:
         await state.update_data(alcohol=[choice])
-        await ask_comment(callback.message, state)
+        await finish(callback.message, state)
     await callback.answer()
 
 @dp.message(Form.alcohol_other)
@@ -157,9 +157,8 @@ async def handle_other_alcohol(message: types.Message, state: FSMContext):
     alcohol = data.get("alcohol", [])
     alcohol.append(other)
     await state.update_data(alcohol=alcohol)
-    await ask_comment(message, state)
-    await state.set_state(Form.comment)
-
+    await finish(message, state)
+    
 @dp.callback_query(lambda c: c.data.startswith("back:"))
 async def go_back(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "back:name":
