@@ -122,8 +122,19 @@ async def select_food(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 async def ask_alcohol(message: types.Message, state: FSMContext):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
+        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
+        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
+        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
+        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
+        [InlineKeyboardButton(text="🧃 Другое", callback_data="alc:Другое")],
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="skip_alcohol")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
+    ])
+    await message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
+    await state.set_state(Form.alcohol)
 
-async def ask_comment(message: types.Message, state: FSMContext):
     await finish(message, state)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
