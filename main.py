@@ -176,7 +176,8 @@ async def go_back(callback: types.CallbackQuery, state: FSMContext):
 @dp.callback_query(lambda c: c.data == "skip_alcohol")
 async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(alcohol=["(не выбрано)"])
-    await ask_comment(callback.message, state)
+    await callback.message.answer("✅ Вы выбрали: (не выбрано)")
+    await finish(callback.message, state)
     await callback.answer()
     await callback.answer()
 
