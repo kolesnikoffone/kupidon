@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -19,12 +19,21 @@ logging.basicConfig(level=logging.INFO)
 
 class Form(StatesGroup):
     name = State()
+    has_guests = State()
+    guest_count = State()
+    guest_names = State()
     main_course = State()
     alcohol = State()
+    alcohol_other = State()
+    comment = State()
 
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
+    start_button = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]
+    ])
+
     await bot.send_photo(
         chat_id=message.chat.id,
         photo="https://i.postimg.cc/YCJ77THc/photo-2025-06-08-18-34-47.jpg",
@@ -34,29 +43,22 @@ async def start(message: types.Message, state: FSMContext):
             "🕛 <b>Время:</b> 12:00 — регистрация\n"
             "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>\n"
             "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>\n"
-            "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)\n\n"
-            "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?"
+            "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)"
         ),
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")],
-            [InlineKeyboardButton(
-                text="📅 Добавить в календарь",
-                url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4+%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i+%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
-            )]
-        ]),
         parse_mode=ParseMode.HTML
+    )
+
+    await message.answer(
+        "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
+        reply_markup=start_button
     )
 
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="📅 Добавить в календарь",
-            url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4+%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i+%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
-        )]
-    ]))
+    await callback.message.edit_reply_markup()
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
+    await callback.answer()
 
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
@@ -95,49 +97,6 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
 
     data = await state.get_data()
     summary = (
-        f"<b>📨 Новое подтверждение:</b>
-"
-        f"👤 <b>Имя:</b> {data['name']}
-"
-        f"🍽 <b>Блюдо:</b> {data['main_course']}
-"
-        f"🍷 <b>Алкоголь:</b> {data['alcohol']}"
-    )
-
-    if ADMIN_CHAT_ID:
-        await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
-
-    await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
-    await state.clear()
-
-async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.delete()
-    alcohol = callback.data.split(":")[1]
-    await state.update_data(alcohol=alcohol)
-
-    data = await state.get_data()
-    summary = (
-        f"<b>📨 Новое подтверждение:</b>
-"
-        f"👤 <b>Имя:</b> {data['name']}
-"
-        f"🍽 <b>Блюдо:</b> {data['main_course']}
-"
-        f"🍷 <b>Алкоголь:</b> {data['alcohol']}"
-    )
-
-    if ADMIN_CHAT_ID:
-        await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
-
-    await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
-    await state.clear()
-
-async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
-    alcohol = callback.data.split(":")[1]
-    await state.update_data(alcohol=alcohol)
-
-    data = await state.get_data()
-    summary = (
         f"<b>📨 Новое подтверждение:</b>\n"
         f"👤 <b>Имя:</b> {data['name']}\n"
         f"🍽 <b>Блюдо:</b> {data['main_course']}\n"
@@ -147,7 +106,6 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     if ADMIN_CHAT_ID:
         await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
 
-        await callback.message.delete()
     await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
