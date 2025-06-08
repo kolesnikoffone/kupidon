@@ -74,6 +74,8 @@ async def get_name(message: types.Message, state: FSMContext):
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(main_course=choice)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
@@ -89,6 +91,8 @@ async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(alcohol=choice)
 
     data = await state.get_data()
