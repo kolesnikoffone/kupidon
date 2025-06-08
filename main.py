@@ -66,6 +66,21 @@ async def start(message: types.Message, state: FSMContext):
     parse_mode=ParseMode.HTML
 )
 
+"
+        "Привет! Я Купидончик 💘
+"
+        "Готов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?"
+    ),
+    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")],
+        [InlineKeyboardButton(
+            text="📅 Добавить в календарь",
+            url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4+%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i+%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
+        )]
+    ]),
+    parse_mode=ParseMode.HTML
+)
+
     await message.answer(
         "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
         reply_markup=start_button
