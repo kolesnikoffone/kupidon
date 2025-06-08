@@ -49,7 +49,12 @@ async def start(message: types.Message, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_reply_markup()
+    await callback.message.edit_reply_markup(reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📅 Добавить в календарь",
+            url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4+%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i+%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
+        )]
+    ]))
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
 
@@ -77,6 +82,7 @@ async def select_food(callback: types.CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
         [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")]
     ])
+        await callback.message.delete()
     await callback.message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
@@ -96,6 +102,7 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     if ADMIN_CHAT_ID:
         await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
 
+        await callback.message.delete()
     await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
