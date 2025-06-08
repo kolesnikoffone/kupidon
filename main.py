@@ -21,8 +21,6 @@ class Form(StatesGroup):
     name = State()
     main_course = State()
     alcohol = State()
-    alcohol_other = State()
-    comment = State()
 
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
@@ -48,3 +46,61 @@ async def start(message: types.Message, state: FSMContext):
         ]),
         parse_mode=ParseMode.HTML
     )
+
+@dp.callback_query(lambda c: c.data == "start_form")
+async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
+    await state.set_state(Form.name)
+
+@dp.message(Form.name)
+async def get_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
+        [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
+        [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
+        [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")]
+    ])
+    await message.answer("🍽 Что вы предпочитаете в качестве основного блюда?", reply_markup=keyboard)
+    await state.set_state(Form.main_course)
+
+@dp.callback_query(lambda c: c.data.startswith("food:"))
+async def select_food(callback: types.CallbackQuery, state: FSMContext):
+    choice = callback.data.split(":")[1]
+    await state.update_data(main_course=choice)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
+        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
+        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
+        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
+        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")]
+    ])
+    await callback.message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
+    await state.set_state(Form.alcohol)
+
+@dp.callback_query(lambda c: c.data.startswith("alc:"))
+async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    alcohol = callback.data.split(":")[1]
+    await state.update_data(alcohol=alcohol)
+
+    data = await state.get_data()
+    summary = (
+        f"<b>📨 Новое подтверждение:</b>\n"
+        f"👤 <b>Имя:</b> {data['name']}\n"
+        f"🍽 <b>Блюдо:</b> {data['main_course']}\n"
+        f"🍷 <b>Алкоголь:</b> {data['alcohol']}"
+    )
+
+    if ADMIN_CHAT_ID:
+        await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+
+    await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
+    await state.clear()
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
