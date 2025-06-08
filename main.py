@@ -29,7 +29,7 @@ async def start(message: types.Message, state: FSMContext):
     await state.clear()
     start_button = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")],
-        [InlineKeyboardButton(text="📅 Добавить в календарь", url="https://drive.google.com/file/d/1TlggskhY-m6ZmqeO9rtUhc_GDkWsVu7A/view?usp=sharing")]
+        [InlineKeyboardButton(text="📅 Добавить в календарь", url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T090000Z%2F20250723T130000Z&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4+%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i+%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл&sf=true&output=xml")]
     ])
 
     await bot.send_photo(
