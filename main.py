@@ -28,7 +28,8 @@ class Form(StatesGroup):
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
     start_button = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]
+        [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")],
+        [InlineKeyboardButton(text="📅 Добавить в календарь", url="https://drive.google.com/file/d/1TlggskhY-m6ZmqeO9rtUhc_GDkWsVu7A/view?usp=sharing")]
     ])
 
     await bot.send_photo(
