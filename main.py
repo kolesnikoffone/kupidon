@@ -31,7 +31,7 @@ async def start(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]
     ])
 
-    sent = await bot.send_photo(
+    await bot.send_photo(
         chat_id=message.chat.id,
         photo="https://i.postimg.cc/MTf0j1W2/IMG-6156-EDIT.jpg",
         caption=(
@@ -44,8 +44,6 @@ async def start(message: types.Message, state: FSMContext):
         ),
         parse_mode=ParseMode.HTML
     )
-
-    await state.update_data(first_msg_id=sent.message_id)
 
     await message.answer(
         "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
@@ -76,6 +74,7 @@ async def ask_main_course(message: types.Message, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_food(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup()
     choice = callback.data.split(":")[1]
     await state.update_data(main_course=[choice])
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
@@ -97,6 +96,7 @@ async def ask_alcohol(message: types.Message, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup()
     choice = callback.data.split(":")[1]
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     if choice == "Другое":
@@ -104,16 +104,15 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(Form.alcohol_other)
     else:
         await state.update_data(alcohol=[choice])
-        await callback.message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
-        await state.set_state(Form.comment)
+        await ask_comment(callback.message, state)
     await callback.answer()
 
 @dp.callback_query(lambda c: c.data == "skip_alcohol")
 async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup()
     await state.update_data(alcohol=["(не выбрано)"])
     await callback.message.answer("✅ Вы выбрали: (не выбрано)")
-    await callback.message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
-    await state.set_state(Form.comment)
+    await ask_comment(callback.message, state)
     await callback.answer()
 
 @dp.message(Form.alcohol_other)
@@ -123,6 +122,10 @@ async def handle_other_alcohol(message: types.Message, state: FSMContext):
     alcohol = data.get("alcohol", [])
     alcohol.append(other)
     await state.update_data(alcohol=alcohol)
+    await ask_comment(message, state)
+    await state.set_state(Form.comment)
+
+async def ask_comment(message: types.Message, state: FSMContext):
     await message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
     await state.set_state(Form.comment)
 
@@ -147,10 +150,12 @@ async def finish(message: types.Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
 
+    await message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
+
+    # Удалим все сообщения, кроме первого и последнего
     try:
-        history = await bot.get_chat_history(message.chat.id, limit=100)
-        for msg in history:
-            if msg.message_id not in {data.get("first_msg_id"), message.message_id}:
+        async for msg in bot.iter_history(message.chat.id, limit=50):
+            if msg.message_id not in [message.message_id, message.message_id - 1]:
                 try:
                     await bot.delete_message(message.chat.id, msg.message_id)
                 except:
@@ -158,7 +163,6 @@ async def finish(message: types.Message, state: FSMContext):
     except:
         pass
 
-    await message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
 async def main():
