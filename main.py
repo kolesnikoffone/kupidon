@@ -74,9 +74,9 @@ async def ask_main_course(message: types.Message, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_food(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_reply_markup()
     choice = callback.data.split(":")[1]
     await state.update_data(main_course=[choice])
+    await callback.message.delete()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await ask_alcohol(callback.message, state)
     await callback.answer()
@@ -96,8 +96,8 @@ async def ask_alcohol(message: types.Message, state: FSMContext):
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_reply_markup()
     choice = callback.data.split(":")[1]
+    await callback.message.delete()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     if choice == "Другое":
         await callback.message.answer("✍️ Пожалуйста, напишите, что именно вы предпочитаете из напитков")
@@ -105,14 +105,6 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     else:
         await state.update_data(alcohol=[choice])
         await ask_comment(callback.message, state)
-    await callback.answer()
-
-@dp.callback_query(lambda c: c.data == "skip_alcohol")
-async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.edit_reply_markup()
-    await state.update_data(alcohol=["(не выбрано)"])
-    await callback.message.answer("✅ Вы выбрали: (не выбрано)")
-    await ask_comment(callback.message, state)
     await callback.answer()
 
 @dp.message(Form.alcohol_other)
@@ -123,15 +115,35 @@ async def handle_other_alcohol(message: types.Message, state: FSMContext):
     alcohol.append(other)
     await state.update_data(alcohol=alcohol)
     await ask_comment(message, state)
-    await state.set_state(Form.comment)
 
 async def ask_comment(message: types.Message, state: FSMContext):
-    await message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_comment")]
+    ])
+    await message.answer("✍️ Есть вопросы или предложения?", reply_markup=keyboard)
     await state.set_state(Form.comment)
 
+@dp.callback_query(lambda c: c.data == "skip_alcohol")
+async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.update_data(alcohol=["(не выбрано)"])
+    await callback.message.answer("✅ Вы выбрали: (не выбрано)")
+    await ask_comment(callback.message, state)
+    await callback.answer()
+
+@dp.callback_query(lambda c: c.data == "skip_comment")
+async def skip_comment(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(comment="(не указано)")
+    await callback.message.delete()
+    await finish(callback.message, state)
+    await callback.answer()
+
 @dp.message(Form.comment)
+async def handle_comment(message: types.Message, state: FSMContext):
+    await state.update_data(comment=message.text.strip())
+    await finish(message, state)
+
 async def finish(message: types.Message, state: FSMContext):
-    data = await state.update_data(comment=message.text.strip())
     data = await state.get_data()
 
     summary = (
@@ -139,30 +151,19 @@ async def finish(message: types.Message, state: FSMContext):
         f"👤 <b>Имя:</b> {data['name']}\n"
         f"🍽 <b>Блюдо:</b> {', '.join(data.get('main_course', []))}\n"
         f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
-        f"💬 <b>Комментарий:</b> {data['comment']}"
+        f"💬 <b>Комментарий:</b> {data.get('comment', '(не указано)')}"
     )
 
     if not ADMIN_CHAT_ID:
         await message.answer("❌ ADMIN_CHAT_ID не задан. Пожалуйста, проверь настройки на Render.")
         return
+
     try:
         await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
     except Exception as e:
         await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
 
     await message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
-
-    # Удалим все сообщения, кроме первого и последнего
-    try:
-        async for msg in bot.iter_history(message.chat.id, limit=50):
-            if msg.message_id not in [message.message_id, message.message_id - 1]:
-                try:
-                    await bot.delete_message(message.chat.id, msg.message_id)
-                except:
-                    pass
-    except:
-        pass
-
     await state.clear()
 
 async def main():
