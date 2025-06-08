@@ -73,6 +73,21 @@ async def get_name(message: types.Message, state: FSMContext):
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_food(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
+    await callback.message.delete()
+    await state.update_data(main_course=choice)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
+        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
+        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
+        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
+        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")]
+    ])
+    await callback.message.answer("🍷 Предпочтения по алкоголю:", reply_markup=keyboard)
+    await state.set_state(Form.alcohol)
+
+async def select_food(callback: types.CallbackQuery, state: FSMContext):
+    choice = callback.data.split(":")[1]
     await state.update_data(main_course=choice)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
@@ -87,6 +102,28 @@ async def select_food(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Form.alcohol)
 
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
+async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    alcohol = callback.data.split(":")[1]
+    await state.update_data(alcohol=alcohol)
+
+    data = await state.get_data()
+    summary = (
+        f"<b>📨 Новое подтверждение:</b>
+"
+        f"👤 <b>Имя:</b> {data['name']}
+"
+        f"🍽 <b>Блюдо:</b> {data['main_course']}
+"
+        f"🍷 <b>Алкоголь:</b> {data['alcohol']}"
+    )
+
+    if ADMIN_CHAT_ID:
+        await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+
+    await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
+    await state.clear()
+
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     alcohol = callback.data.split(":")[1]
     await state.update_data(alcohol=alcohol)
