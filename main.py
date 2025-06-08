@@ -22,6 +22,7 @@ class Form(StatesGroup):
     main_course = State()
     alcohol = State()
     alcohol_other = State()
+    comment = State()
 
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
@@ -30,7 +31,7 @@ async def start(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")]
     ])
 
-    await bot.send_photo(
+    sent = await bot.send_photo(
         chat_id=message.chat.id,
         photo="https://i.postimg.cc/MTf0j1W2/IMG-6156-EDIT.jpg",
         caption=(
@@ -43,6 +44,8 @@ async def start(message: types.Message, state: FSMContext):
         ),
         parse_mode=ParseMode.HTML
     )
+
+    await state.update_data(first_msg_id=sent.message_id)
 
     await message.answer(
         "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов, чтобы подтвердить участие в свадьбе?",
@@ -101,7 +104,16 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(Form.alcohol_other)
     else:
         await state.update_data(alcohol=[choice])
-        await finish(callback.message, state)
+        await callback.message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
+        await state.set_state(Form.comment)
+    await callback.answer()
+
+@dp.callback_query(lambda c: c.data == "skip_alcohol")
+async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(alcohol=["(не выбрано)"])
+    await callback.message.answer("✅ Вы выбрали: (не выбрано)")
+    await callback.message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
+    await state.set_state(Form.comment)
     await callback.answer()
 
 @dp.message(Form.alcohol_other)
@@ -111,23 +123,20 @@ async def handle_other_alcohol(message: types.Message, state: FSMContext):
     alcohol = data.get("alcohol", [])
     alcohol.append(other)
     await state.update_data(alcohol=alcohol)
-    await finish(message, state)
+    await message.answer("✍️ Есть пожелания или комментарии? Напиши их или просто отправь любой символ")
+    await state.set_state(Form.comment)
 
-@dp.callback_query(lambda c: c.data == "skip_alcohol")
-async def skip_alcohol(callback: types.CallbackQuery, state: FSMContext):
-    await state.update_data(alcohol=["(не выбрано)"])
-    await callback.message.answer("✅ Вы выбрали: (не выбрано)")
-    await finish(callback.message, state)
-    await callback.answer()
-
+@dp.message(Form.comment)
 async def finish(message: types.Message, state: FSMContext):
+    data = await state.update_data(comment=message.text.strip())
     data = await state.get_data()
 
     summary = (
         f"<b>📨 Новое подтверждение:</b>\n"
         f"👤 <b>Имя:</b> {data['name']}\n"
         f"🍽 <b>Блюдо:</b> {', '.join(data.get('main_course', []))}\n"
-        f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}"
+        f"🍷 <b>Алкоголь:</b> {', '.join(data.get('alcohol', []))}\n"
+        f"💬 <b>Комментарий:</b> {data['comment']}"
     )
 
     if not ADMIN_CHAT_ID:
@@ -137,6 +146,17 @@ async def finish(message: types.Message, state: FSMContext):
         await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
     except Exception as e:
         await message.answer(f"❌ Ошибка при отправке сообщения в чат: {e}")
+
+    try:
+        history = await bot.get_chat_history(message.chat.id, limit=100)
+        for msg in history:
+            if msg.message_id not in {data.get("first_msg_id"), message.message_id}:
+                try:
+                    await bot.delete_message(message.chat.id, msg.message_id)
+                except:
+                    pass
+    except:
+        pass
 
     await message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
