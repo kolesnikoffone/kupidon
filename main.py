@@ -53,13 +53,22 @@ async def start(message: types.Message, state: FSMContext):
 # Обработка нажатия "Начать"
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
+    # Сохраняем кнопку календаря
     cal_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📅 Добавить в календарь",
-            url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
+        [InlineKeyboardButton(text="📅 Добавить в календарь", url=
+            "https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
         )]
     ])
+    # Очищаем предыдущие кнопки и оставляем только календарь
     await callback.message.edit_reply_markup(reply_markup=cal_markup)
+    # Информация о дополнительных гостях
+    await callback.message.answer(
+        "👥 Если с вами будут дополнительные гости, вы можете заполнить форму за себя и за них, "
+        "или каждый гость может пройти опрос со своего телефона."
+    )
+    # Запрашиваем имя гостя
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
+    await state.set_state(Form.name)
     await state.set_state(Form.name)
 
 # Шаг 1: Имя
