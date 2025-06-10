@@ -9,12 +9,11 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 import os
 
+# Инициализация бота и диспетчера
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # строка вида '-100...'
-
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # chat_id вида "-100..."
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
-
 logging.basicConfig(level=logging.INFO)
 
 # Определение состояний
@@ -24,8 +23,9 @@ class Form(StatesGroup):
     alcohol = State()
     activities = State()
     transport = State()
+    dance = State()
 
-# Старт: фото + инфо + кнопки
+# Стартовое сообщение с инфо и кнопками
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
@@ -45,14 +45,14 @@ async def start(message: types.Message, state: FSMContext):
             "📍 <b>Регистрация:</b> <a href='https://yandex.ru/maps/-/CHrU5XZ4'>Екатерининский зал</a>\n"
             "🍽 <b>Банкет:</b> <a href='https://yandex.ru/maps/-/CHrUBE2i'>Двин Холл, зал Лайт</a>\n"
             "👗 <b>Дресс-код:</b> классика в пастельных тонах (не строго)\n\n"
-            "Привет! Я Купидончик 💘\nГотов(а) ответить на пару вопросов?"
+            "Привет! Я Купидончик 💘\nГотов(а) ответить на вопросы?"
         ),
         reply_markup=markup
     )
 
+# Обработка нажатия "Начать"
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
-    # Оставляем только кнопку календаря
     cal_markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📅 Добавить в календарь",
             url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
@@ -62,25 +62,27 @@ async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
 
+# Шаг 1: Имя
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    food_markup = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
         [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
         [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
         [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")]
     ])
-    await message.answer("🍽 Какое основное блюдо вы предпочитаете?", reply_markup=food_markup)
+    await message.answer("🍽 Какое основное блюдо вы предпочитаете?", reply_markup=keyboard)
     await state.set_state(Form.main_course)
 
+# Шаг 2: Блюдо
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(main_course=choice)
-    alc_markup = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
         [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
         [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
@@ -88,39 +90,42 @@ async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
         [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")]
     ])
-    await callback.message.answer("🍷 Предпочтения по алкоголю?", reply_markup=alc_markup)
+    await callback.message.answer("🍷 Предпочтения по алкоголю?", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
+# Шаг 3: Алкоголь
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(alcohol=choice)
-    act_markup = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎉 Да, очень хочу!", callback_data="act:yes")],
         [InlineKeyboardButton(text="🤔 Может быть", callback_data="act:maybe")],
         [InlineKeyboardButton(text="🍽 Я хочу покушать", callback_data="act:no")]
     ])
-    await callback.message.answer("🎭 Хотите ли вы участвовать в активностях?", reply_markup=act_markup)
+    await callback.message.answer("🎭 Хотите ли участвовать в активностях?", reply_markup=keyboard)
     await state.set_state(Form.activities)
 
+# Шаг 4: Активности
 @dp.callback_query(lambda c: c.data.startswith("act:"))
 async def select_activities(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data.split(":")[1]
-    display = {"yes":"Да, очень хочу!","maybe":"Может быть","no":"Я хочу покушать"}.get(choice)
+    key = callback.data.split(":")[1]
+    mapping = {"yes":"Да, очень хочу!","maybe":"Может быть","no":"Я хочу покушать"}
+    text = mapping.get(key)
     await callback.message.edit_reply_markup()
-    await callback.message.answer(f"✅ Вы выбрали: {display}")
-    await state.update_data(activities=display)
-    # Новое: вопрос о транспорте
-    trans_markup = InlineKeyboardMarkup(inline_keyboard=[
+    await callback.message.answer(f"✅ Вы выбрали: {text}")
+    await state.update_data(activities=text)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚗 На машине", callback_data="trans:car")],
         [InlineKeyboardButton(text="🚕 На такси", callback_data="trans:taxi")],
         [InlineKeyboardButton(text="🐴 На коне", callback_data="trans:horse")]
     ])
-    await callback.message.answer("🚙 Каким транспортом вы доберетесь?", reply_markup=trans_markup)
+    await callback.message.answer("🚙 Каким транспортом доберетесь?", reply_markup=keyboard)
     await state.set_state(Form.transport)
 
+# Шаг 5: Транспорт
 @dp.callback_query(lambda c: c.data.startswith("trans:"))
 async def select_transport(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
@@ -132,8 +137,26 @@ async def select_transport(callback: types.CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer(f"✅ Вы выбрали: {text}")
     await state.update_data(transport=text)
+    # Шаг 6: Танцы
+    dance_markup = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💃 Да, очень люблю танцевать", callback_data="dance:yes")],
+        [InlineKeyboardButton(text="🕺 Может быть потанцую немного", callback_data="dance:maybe")],
+        [InlineKeyboardButton(text="👀 Я просто посмотрю, как танцуют другие", callback_data="dance:no")]
+    ])
+    await callback.message.answer("🕺 Будете ли вы танцевать?", reply_markup=dance_markup)
+    await state.set_state(Form.dance)
 
-    # Итоговое сообщение
+# Шаг 7: Танцы
+@dp.callback_query(lambda c: c.data.startswith("dance:"))
+async def select_dance(callback: types.CallbackQuery, state: FSMContext):
+    key = callback.data.split(":")[1]
+    mapping = {"yes":"Да, очень люблю танцевать","maybe":"Может быть потанцую немного","no":"Просто посмотрю, как танцуют другие"}
+    text = mapping.get(key)
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(f"✅ Вы выбрали: {text}")
+    await state.update_data(dance=text)
+
+    # Итог
     data = await state.get_data()
     summary = (
         f"📨 <b>Новое подтверждение:</b>\n"
@@ -141,14 +164,14 @@ async def select_transport(callback: types.CallbackQuery, state: FSMContext):
         f"🍽 Блюдо: {data['main_course']}\n"
         f"🍷 Алкоголь: {data['alcohol']}\n"
         f"🎭 Активности: {data['activities']}\n"
-        f"🚙 Транспорт: {data['transport']}"
+        f"🚙 Транспорт: {data['transport']}\n"
+        f"🕺 Танцы: {data['dance']}"
     )
     if ADMIN_CHAT_ID:
         try:
             await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary, parse_mode=ParseMode.HTML)
         except Exception as e:
             await callback.message.answer(f"Ошибка отправки админу: {e}")
-
     await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
     await state.clear()
 
