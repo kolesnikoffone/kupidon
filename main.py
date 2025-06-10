@@ -67,8 +67,7 @@ async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    # Картинка для выбора блюда
-    await message.answer_photo(photo="https://i.postimg.cc/4YLvHs1s/eat.png")
+    # Блок с изображением и кнопками выбора блюда
     food_markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
         [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
@@ -76,7 +75,13 @@ async def get_name(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back:name")]
     ])
-    await message.answer("🍽 Какое основное блюдо вы предпочитаете?", reply_markup=food_markup)
+    await bot.send_photo(
+        chat_id=message.chat.id,
+        photo="https://i.postimg.cc/4YLvHs1s/eat.png",
+        caption="🍽 <b>Какое основное блюдо вы предпочитаете?</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=food_markup
+    )
     await state.set_state(Form.main_course)
 
 # Выбор блюда
@@ -86,8 +91,7 @@ async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(main_course=choice)
-    # Картинка для алкоголя
-    await callback.message.answer_photo(photo="https://i.postimg.cc/mcPYQJdM/drink.png")
+    # Блок с изображением и кнопками выбора алкоголя
     alc_markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
         [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
@@ -97,7 +101,13 @@ async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
-    await callback.message.answer("🍷 Предпочтения по алкоголю?", reply_markup=alc_markup)
+    await bot.send_photo(
+        chat_id=callback.message.chat.id,
+        photo="https://i.postimg.cc/mcPYQJdM/drink.png",
+        caption="🍷 <b>Предпочтения по алкоголю?</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=alc_markup
+    )
     await state.set_state(Form.alcohol)
 
 # Выбор алкоголя
@@ -107,15 +117,19 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(alcohol=choice)
-    # Картинка для активностей
-    await callback.message.answer_photo(photo="https://i.postimg.cc/RNTL9c63/party.png")
-    act_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎉 Да, очень хочу!", callback_data="act:yes")],
-        [InlineKeyboardButton(text="🤔 Может быть", callback_data="act:maybe")],
-        [InlineKeyboardButton(text="🍽 Я хочу покушать", callback_data="act:no")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:alcohol")]
-    ])
-    await callback.message.answer("🎭 Хотите участвовать в активностях?", reply_markup=act_markup)
+    # Блок с изображением и кнопками активностей
+    await bot.send_photo(
+        chat_id=callback.message.chat.id,
+        photo="https://i.postimg.cc/RNTL9c63/party.png",
+        caption="🎭 <b>Хотите участвовать в активностях?</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎉 Да, очень хочу!", callback_data="act:yes")],
+            [InlineKeyboardButton(text="🤔 Может быть", callback_data="act:maybe")],
+            [InlineKeyboardButton(text="🍽 Я хочу покушать", callback_data="act:no")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:alcohol")]
+        ])
+    )
     await state.set_state(Form.activities)
 
 # Выбор активности
