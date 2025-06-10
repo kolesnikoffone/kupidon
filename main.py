@@ -106,28 +106,22 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
 
     data = await state.get_data()
     summary = (
-    f"📨 Новое подтверждение:
-"
-    f"👤 Имя: {data.get('name')}
-"
-    f"🍽 Блюдо: {data.get('main_course')}
-"
-    f"🍷 Алкоголь: {data.get('alcohol')}
-"
+    f"📨 Новое подтверждение:"
+    f"👤 Имя: {data.get('name')}"
+    f"🍽 Блюдо: {data.get('main_course')}"
+    f"🍷 Алкоголь: {data.get('alcohol')}"
     f"🎭 Активности: {data.get('activities')}"
-)}
-"
-    f"🍽 Блюдо: {data.get('main_course')}
-"
-    f"🍷 Алкоголь: {data.get('alcohol')}
-"
+)}"
+    f"🍽 Блюдо: {data.get('main_course')}"
+    f"🍷 Алкоголь: {data.get('alcohol')}"
     f"🎭 Активности: {data.get('activities')}"
-)}
-"
-        f"🍽 Блюдо: {data.get('main_course')}
-"
-        f"🍷 Алкоголь: {data.get('alcohol')}
-"
+)}"
+    f"🍽 Блюдо: {data.get('main_course')}"
+    f"🍷 Алкоголь: {data.get('alcohol')}"
+    f"🎭 Активности: {data.get('activities')}"
+)}"
+        f"🍽 Блюдо: {data.get('main_course')}"
+        f"🍷 Алкоголь: {data.get('alcohol')}"
         f"🎭 Активности: {data.get('activities')}"
     )}\n"
         f"🍽 Блюдо: {data.get('main_course')}\n"
@@ -157,14 +151,10 @@ async def select_activities(callback: types.CallbackQuery, state: FSMContext):
 
     data = await state.get_data()
     summary = (
-        f"📨 Новое подтверждение:
-"
-        f"👤 Имя: {data.get('name')}
-"
-        f"🍽 Блюдо: {data.get('main_course')}
-"
-        f"🍷 Алкоголь: {data.get('alcohol')}
-"
+        f"📨 Новое подтверждение:"
+        f"👤 Имя: {data.get('name')}"
+        f"🍽 Блюдо: {data.get('main_course')}"
+        f"🍷 Алкоголь: {data.get('alcohol')}"
         f"🎭 Активности: {data.get('activities')}"
     )
 
