@@ -9,14 +9,15 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 import os
 
-# Инициализация бота и диспетчера
+# Init bot
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # chat_id вида "-100..."
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 logging.basicConfig(level=logging.INFO)
 
-# Определение состояний
+# Define states
 class Form(StatesGroup):
     name = State()
     main_course = State()
@@ -25,14 +26,17 @@ class Form(StatesGroup):
     transport = State()
     dance = State()
 
-# Стартовое сообщение с инфо и кнопками
+# /start handler
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
     await state.clear()
     markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚀 Начать", callback_data="start_form")],
-        [InlineKeyboardButton(text="📅 Добавить в календарь",
-            url="https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
+        [InlineKeyboardButton(text="📅 Добавить в календарь", url=
+            "https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&"
+            "dates=20250723T120000/20250723T160000&ctz=Europe/Moscow"
+            "&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i"
+            "%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
         )]
     ])
     await bot.send_photo(
@@ -50,28 +54,41 @@ async def start(message: types.Message, state: FSMContext):
         reply_markup=markup
     )
 
-# Обработка нажатия "Начать"
+# back handler
+@dp.callback_query(lambda c: c.data.startswith("back:"))
+async def go_back(callback: types.CallbackQuery, state: FSMContext):
+    step = callback.data.split(":")[1]
+    await callback.message.delete()
+    if step == "name":
+        await start(callback.message, state)
+    elif step == "main_course":
+        await get_name(callback.message, state)
+    elif step == "alcohol":
+        await select_main_course(callback, state)
+    elif step == "activities":
+        await select_alcohol(callback, state)
+    elif step == "transport":
+        await select_activities(callback, state)
+    elif step == "dance":
+        await select_transport(callback, state)
+    await callback.answer()
+
+# start form
 @dp.callback_query(lambda c: c.data == "start_form")
 async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
-    # Сохраняем кнопку календаря
     cal_markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📅 Добавить в календарь", url=
-            "https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&dates=20250723T120000/20250723T160000&ctz=Europe/Moscow&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
+            "https://www.google.com/calendar/render?action=TEMPLATE&text=Свадьба+Игоря+и+Анастасии&"
+            "dates=20250723T120000/20250723T160000&ctz=Europe/Moscow"
+            "&details=Регистрация:+https://yandex.ru/maps/-/CHrU5XZ4%0AБанкет:+https://yandex.ru/maps/-/CHrUBE2i"
+            "%0AДресс-код:+классика+в+пастельных+тонах&location=Екатерининский+зал,+Двин+Холл"
         )]
     ])
-    # Очищаем предыдущие кнопки и оставляем только календарь
     await callback.message.edit_reply_markup(reply_markup=cal_markup)
-    # Информация о дополнительных гостях
-    await callback.message.answer(
-        "👥 Если с вами будут дополнительные гости, вы можете заполнить форму за себя и за них, "
-        "или каждый гость может пройти опрос со своего телефона."
-    )
-    # Запрашиваем имя гостя
     await callback.message.answer("👤 Как тебя зовут? (Имя и Фамилия)")
     await state.set_state(Form.name)
-    await state.set_state(Form.name)
 
-# Шаг 1: Имя
+# name
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
@@ -79,12 +96,13 @@ async def get_name(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
         [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
         [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
-        [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")]
+        [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:name")]
     ])
     await message.answer("🍽 Какое основное блюдо вы предпочитаете?", reply_markup=keyboard)
     await state.set_state(Form.main_course)
 
-# Шаг 2: Блюдо
+# main course
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
@@ -97,12 +115,13 @@ async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
         [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
         [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
-        [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")]
+        [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
     ])
     await callback.message.answer("🍷 Предпочтения по алкоголю?", reply_markup=keyboard)
     await state.set_state(Form.alcohol)
 
-# Шаг 3: Алкоголь
+# alcohol
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
@@ -112,12 +131,13 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎉 Да, очень хочу!", callback_data="act:yes")],
         [InlineKeyboardButton(text="🤔 Может быть", callback_data="act:maybe")],
-        [InlineKeyboardButton(text="🍽 Я хочу покушать", callback_data="act:no")]
+        [InlineKeyboardButton(text="🍽 Я хочу покушать", callback_data="act:no")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:alcohol")]
     ])
     await callback.message.answer("🎭 Хотите ли участвовать в активностях?", reply_markup=keyboard)
     await state.set_state(Form.activities)
 
-# Шаг 4: Активности
+# activities
 @dp.callback_query(lambda c: c.data.startswith("act:"))
 async def select_activities(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
@@ -129,12 +149,13 @@ async def select_activities(callback: types.CallbackQuery, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚗 На машине", callback_data="trans:car")],
         [InlineKeyboardButton(text="🚕 На такси", callback_data="trans:taxi")],
-        [InlineKeyboardButton(text="🐴 На коне", callback_data="trans:horse")]
+        [InlineKeyboardButton(text="🐴 На коне", callback_data="trans:horse")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:activities")]
     ])
     await callback.message.answer("🚙 Каким транспортом доберетесь?", reply_markup=keyboard)
     await state.set_state(Form.transport)
 
-# Шаг 5: Транспорт
+# transport
 @dp.callback_query(lambda c: c.data.startswith("trans:"))
 async def select_transport(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
@@ -146,26 +167,26 @@ async def select_transport(callback: types.CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer(f"✅ Вы выбрали: {text}")
     await state.update_data(transport=text)
-    # Шаг 6: Танцы
-    dance_markup = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💃 Да, очень люблю танцевать", callback_data="dance:yes")],
         [InlineKeyboardButton(text="🕺 Может быть потанцую немного", callback_data="dance:maybe")],
-        [InlineKeyboardButton(text="👀 Я просто посмотрю, как танцуют другие", callback_data="dance:no")]
+        [InlineKeyboardButton(text="👀 Я просто посмотрю, как танцуют другие", callback_data="dance:no")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:transport")]
     ])
-    await callback.message.answer("🕺 Будете ли вы танцевать?", reply_markup=dance_markup)
+    await callback.message.answer("🕺 Будете ли вы танцевать?", reply_markup=keyboard)
     await state.set_state(Form.dance)
 
-# Шаг 7: Танцы
+# dance
 @dp.callback_query(lambda c: c.data.startswith("dance:"))
 async def select_dance(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
-    mapping = {"yes":"Да, очень люблю танцевать","maybe":"Может быть потанцую немного","no":"Просто посмотрю, как танцуют другие"}
+    mapping = {"yes":"Да, очень люблю танцевать","maybe":"Может быть потанцую","no":"Просто посмотрю"}
     text = mapping.get(key)
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {text}")
     await state.update_data(dance=text)
 
-    # Итог
+    # итог
     data = await state.get_data()
     summary = (
         f"📨 <b>Новое подтверждение:</b>\n"
