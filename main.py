@@ -117,6 +117,13 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     f"🎭 Активности: {data.get('activities')}"
 )}
 "
+    f"🍽 Блюдо: {data.get('main_course')}
+"
+    f"🍷 Алкоголь: {data.get('alcohol')}
+"
+    f"🎭 Активности: {data.get('activities')}"
+)}
+"
         f"🍽 Блюдо: {data.get('main_course')}
 "
         f"🍷 Алкоголь: {data.get('alcohol')}
