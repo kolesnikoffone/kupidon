@@ -21,6 +21,7 @@ class Form(StatesGroup):
     name = State()
     main_course = State()
     alcohol = State()
+    activities = State()
 
 @dp.message(CommandStart())
 async def start(message: types.Message, state: FSMContext):
@@ -95,12 +96,54 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(alcohol=choice)
 
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎉 Да, очень хочу!", callback_data="act:yes")],
+        [InlineKeyboardButton(text="🤔 Может быть", callback_data="act:maybe")],
+        [InlineKeyboardButton(text="🍽 Оставьте меня в покое, я хочу покушать", callback_data="act:no")]
+    ])
+    await callback.message.answer("🎭 Хотите ли вы участвовать в активностях от ведущего?", reply_markup=keyboard)
+    await state.set_state(Form.activities)
+
     data = await state.get_data()
     summary = (
         f"📨 Новое подтверждение:\n"
         f"👤 Имя: {data.get('name')}\n"
         f"🍽 Блюдо: {data.get('main_course')}\n"
         f"🍷 Алкоголь: {data.get('alcohol')}"
+    )
+
+    if ADMIN_CHAT_ID:
+        try:
+            await bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=summary)
+        except Exception as e:
+            await callback.message.answer(f"Ошибка отправки админу: {e}")
+
+    await callback.message.answer("🎉 Спасибо! Присоединяйся к свадебному чату: https://t.me/+T300ZeTouJ5kYjIy")
+    await state.clear()
+
+@dp.callback_query(lambda c: c.data.startswith("act:"))
+async def select_activities(callback: types.CallbackQuery, state: FSMContext):
+    choice = callback.data.split(":")[1]
+    text = {
+        "yes": "🎉 Да, очень хочу!",
+        "maybe": "🤔 Может быть",
+        "no": "🍽 Оставьте меня в покое, я хочу покушать"
+    }.get(choice, choice)
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(f"✅ Вы выбрали: {text}")
+    await state.update_data(activities=text)
+
+    data = await state.get_data()
+    summary = (
+        f"📨 Новое подтверждение:
+"
+        f"👤 Имя: {data.get('name')}
+"
+        f"🍽 Блюдо: {data.get('main_course')}
+"
+        f"🍷 Алкоголь: {data.get('alcohol')}
+"
+        f"🎭 Активности: {data.get('activities')}"
     )
 
     if ADMIN_CHAT_ID:
