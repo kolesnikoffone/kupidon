@@ -64,60 +64,60 @@ async def handle_start_form(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Form.name)
 
 # Ввод имени
+# … (предыдущий код остаётся без изменений) …
+
 @dp.message(Form.name)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
-    # Блок с изображением и кнопками выбора блюда
-    food_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
-        [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
-        [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
-        [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:name")]
-    ])
+    # Блок с картинкой + выбор блюда
     await bot.send_photo(
         chat_id=message.chat.id,
         photo="https://i.postimg.cc/4YLvHs1s/eat.png",
         caption="🍽 <b>Какое основное блюдо вы предпочитаете?</b>",
         parse_mode=ParseMode.HTML,
-        reply_markup=food_markup
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🐟 Рыба", callback_data="food:Рыба")],
+            [InlineKeyboardButton(text="🥩 Мясо", callback_data="food:Мясо")],
+            [InlineKeyboardButton(text="🍗 Курица", callback_data="food:Курица")],
+            [InlineKeyboardButton(text="🥦 Овощи и грибы", callback_data="food:Овощи и грибы")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:name")]
+        ])
     )
     await state.set_state(Form.main_course)
 
-# Выбор блюда
+
 @dp.callback_query(lambda c: c.data.startswith("food:"))
 async def select_main_course(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(main_course=choice)
-    # Блок с изображением и кнопками выбора алкоголя
-    alc_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
-        [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
-        [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
-        [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
-        [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
-        [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
-    ])
+    # Блок с картинкой + выбор алкоголя
     await bot.send_photo(
         chat_id=callback.message.chat.id,
         photo="https://i.postimg.cc/mcPYQJdM/drink.png",
         caption="🍷 <b>Предпочтения по алкоголю?</b>",
         parse_mode=ParseMode.HTML,
-        reply_markup=alc_markup
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🍾 Игристое", callback_data="alc:Игристое")],
+            [InlineKeyboardButton(text="🥂 Белое вино", callback_data="alc:Белое вино")],
+            [InlineKeyboardButton(text="🍷 Красное вино", callback_data="alc:Красное вино")],
+            [InlineKeyboardButton(text="🥃 Коньяк", callback_data="alc:Коньяк")],
+            [InlineKeyboardButton(text="🍸 Водка", callback_data="alc:Водка")],
+            [InlineKeyboardButton(text="📝 Пропустить", callback_data="alc:Пропустить")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:main_course")]
+        ])
     )
     await state.set_state(Form.alcohol)
 
-# Выбор алкоголя
+
 @dp.callback_query(lambda c: c.data.startswith("alc:"))
 async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     choice = callback.data.split(":")[1]
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {choice}")
     await state.update_data(alcohol=choice)
-    # Блок с изображением и кнопками активностей
+    # Блок с картинкой + выбор активности
     await bot.send_photo(
         chat_id=callback.message.chat.id,
         photo="https://i.postimg.cc/RNTL9c63/party.png",
@@ -132,47 +132,55 @@ async def select_alcohol(callback: types.CallbackQuery, state: FSMContext):
     )
     await state.set_state(Form.activities)
 
-# Выбор активности
+
 @dp.callback_query(lambda c: c.data.startswith("act:"))
 async def select_activities(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
     mapping = {"yes":"Да, очень хочу!","maybe":"Может быть","no":"Я хочу покушать"}
-    text = mapping.get(key)
+    text = mapping[key]
     await callback.message.edit_reply_markup()
     await callback.message.answer(f"✅ Вы выбрали: {text}")
     await state.update_data(activities=text)
-    # Картинка для транспорта
-    await callback.message.answer_photo(photo="https://i.postimg.cc/fkmvq4Mf/car.png")
-    trans_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🚗 На машине", callback_data="trans:car")],
-        [InlineKeyboardButton(text="🚕 На такси", callback_data="trans:taxi")],
-        [InlineKeyboardButton(text="🐴 На коне", callback_data="trans:horse")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:activities")]
-    ])
-    await callback.message.answer("🚙 Каким транспортом доберетесь?", reply_markup=trans_markup)
+    # Блок с картинкой + выбор транспорта
+    await bot.send_photo(
+        chat_id=callback.message.chat.id,
+        photo="https://i.postimg.cc/fkmvq4Mf/car.png",
+        caption="🚙 <b>Каким транспортом доберетесь?</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🚗 На машине", callback_data="trans:car")],
+            [InlineKeyboardButton(text="🚕 На такси", callback_data="trans:taxi")],
+            [InlineKeyboardButton(text="🐴 На коне", callback_data="trans:horse")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:activities")]
+        ])
+    )
     await state.set_state(Form.transport)
 
-# Выбор транспорта
+
 @dp.callback_query(lambda c: c.data.startswith("trans:"))
 async def select_transport(callback: types.CallbackQuery, state: FSMContext):
     key = callback.data.split(":")[1]
     mapping = {"car":"На машине","taxi":"На такси","horse":"На коне"}
-    text = mapping.get(key)
+    text = mapping[key]
     await callback.message.edit_reply_markup()
     if key == "car":
         await callback.message.answer("✅ Отлично, там есть парковочные места прямо рядом с рестораном.")
     else:
         await callback.message.answer(f"✅ Вы выбрали: {text}")
     await state.update_data(transport=text)
-    # Картинка для танцев
-    await callback.message.answer_photo(photo="https://i.postimg.cc/5XNqt6Ls/dance.png")
-    dance_markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💃 Да, очень люблю танцевать", callback_data="dance:yes")],
-        [InlineKeyboardButton(text="🕺 Может быть потанцую немного", callback_data="dance:maybe")],
-        [InlineKeyboardButton(text="👀 Я просто посмотрю, как танцуют другие", callback_data="dance:no")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="back:transport")]
-    ])
-    await callback.message.answer("🕺 Будете ли вы танцевать?", reply_markup=dance_markup)
+    # Блок с картинкой + выбор танцев
+    await bot.send_photo(
+        chat_id=callback.message.chat.id,
+        photo="https://i.postimg.cc/5XNqt6Ls/dance.png",
+        caption="🕺 <b>Будете ли вы танцевать?</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="💃 Да, очень люблю танцевать", callback_data="dance:yes")],
+            [InlineKeyboardButton(text="🕺 Может быть потанцую немного", callback_data="dance:maybe")],
+            [InlineKeyboardButton(text="👀 Я просто посмотрю, как танцуют другие", callback_data="dance:no")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back:transport")]
+        ])
+    )
     await state.set_state(Form.dance)
 
 # Выбор танцев
